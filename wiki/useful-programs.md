@@ -35,9 +35,44 @@ Browsers:
 
 ### `Chrome`
 
+`Chrome` is a web browser developed by `Google`.
+
+It is available on:
+
+- [`Windows`](./operating-system.md#windows)
+- [`macOS`](./operating-system.md#macos)
+- [`Linux`](./operating-system.md#linux)
+
+Docs:
+
+- [Download `Chrome`](https://www.google.com/chrome/)
+
 ### `Firefox`
 
+`Firefox` is a web browser developed by `Mozilla`.
+
+It is available on
+
+- [`Windows`](./operating-system.md#windows)
+- [`macOS`](./operating-system.md#macos)
+- [`Linux`](./operating-system.md#linux)
+
+Docs:
+
+- [Download `Firefox`](https://www.mozilla.org/firefox/)
+
 ### `Safari`
+
+`Safari` is a web browser developed by `Apple`.
+
+It is available on:
+
+- [`macOS`](./operating-system.md#macos)
+- [`iOS`](./operating-system.md#ios)
+
+Docs:
+
+- [About `Safari`](https://www.apple.com/safari/)
 
 ## `curl`
 

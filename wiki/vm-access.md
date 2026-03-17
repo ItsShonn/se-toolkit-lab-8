@@ -399,11 +399,28 @@ Complete these steps:
 
 2. Find the `se-toolkit-vm` entry.
 
-3. Change `User root` to `User <user>`.
+3. Change `User root` to `User <user>`:
 
-   Replace the placeholder `<user>`.
+   - `Linux`, `Windows`:
 
-   The result should look like this:
+     ```text
+     Host se-toolkit-vm
+        HostName <your-vm-ip-address>
+        User <user>
+        IdentityFile ~/.ssh/se_toolkit_key
+        AddKeysToAgent yes
+     ```
+
+   - `macOS`:
+
+     ```text
+     Host se-toolkit-vm
+        HostName <your-vm-ip-address>
+        User <user>
+        IdentityFile ~/.ssh/se_toolkit_key
+        AddKeysToAgent yes
+        UseKeychain yes
+     ```
 
    - `Linux`, `Windows`:
 

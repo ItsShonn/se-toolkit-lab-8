@@ -16,8 +16,8 @@
 - [Create the non-root user `<user>` (REMOTE)](#create-the-non-root-user-user-remote)
 - [Set up the `SSH` key authentication for the user `<user>` (REMOTE)](#set-up-the-ssh-key-authentication-for-the-user-user-remote)
 - [Verify that you can connect to the VM by `SSH` as the user `<user>` (LOCAL)](#verify-that-you-can-connect-to-the-vm-by-ssh-as-the-user-user-local)
-- [Harden the `SSH` config (REMOTE)](#harden-the-ssh-config-remote)
 - [Update the `SSH` config (LOCAL)](#update-the-ssh-config-local)
+- [Harden the `SSH` config (REMOTE)](#harden-the-ssh-config-remote)
 - [Restart `sshd` (REMOTE)](#restart-sshd-remote)
 - [Verify you can connect as the user `<user>` (LOCAL)](#verify-you-can-connect-as-the-user-user-local)
 - [Troubleshooting](#troubleshooting)
@@ -352,37 +352,6 @@ Complete these steps:
 
 3. Confirm the connection did not prompt for a password.
 
-## Harden the `SSH` config (REMOTE)
-
-<!-- TODO need to log in as root? -->
-<!-- TODO what are the implications -->
-<!-- TODO check there's this file at all with this content -->
-<!-- TODO keep root login but make it non-default? -->
-
-1. To open the [`SSH`](./ssh.md#what-is-ssh) config,
-
-   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
-
-   ```terminal
-   sudo nano /etc/ssh/sshd_config
-   ```
-
-2. Find the line `PermitRootLogin` and set it to:
-
-   ```text
-   PermitRootLogin no
-   ```
-
-3. Find the line `PasswordAuthentication` and set it to:
-
-   ```text
-   PasswordAuthentication no
-   ```
-
-4. Save (`Ctrl+O`, `Enter`).
-
-5. Exit (`Ctrl+X`).
-
 ## Update the `SSH` config (LOCAL)
 
 > [!NOTE]
@@ -421,6 +390,37 @@ Complete these steps:
         PasswordAuthentication no
         UseKeychain yes
      ```
+
+## Harden the `SSH` config (REMOTE)
+
+<!-- TODO need to log in as root? -->
+<!-- TODO what are the implications -->
+<!-- TODO check there's this file at all with this content -->
+<!-- TODO keep root login but make it non-default? -->
+
+1. To open the [`SSH`](./ssh.md#what-is-ssh) config,
+
+   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
+
+   ```terminal
+   sudo nano /etc/ssh/sshd_config
+   ```
+
+2. Find the line `PermitRootLogin` and set it to:
+
+   ```text
+   PermitRootLogin no
+   ```
+
+3. Find the line `PasswordAuthentication` and set it to:
+
+   ```text
+   PasswordAuthentication no
+   ```
+
+4. Save (`Ctrl+O`, `Enter`).
+
+5. Exit (`Ctrl+X`).
 
 ## Restart `sshd` (REMOTE)
 

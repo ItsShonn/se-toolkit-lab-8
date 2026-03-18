@@ -226,14 +226,15 @@ You need to run the ETL pipeline to populate it with data from the [`Autochecker
 
 ### Containers exit immediately
 
-To rebuild all containers from scratch,
+1. [Stop and remove all containers and volumes](./docker-compose.md#stop-and-remove-all-containers-and-volumes).
 
-[run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
+2. To rebuild all containers,
 
-```terminal
-docker compose --env-file .env.docker.secret down -v
-docker compose --env-file .env.docker.secret up --build -d
-```
+   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
+
+   ```terminal
+   docker compose --env-file .env.docker.secret up --build -d
+   ```
 
 ### Image pull fails
 

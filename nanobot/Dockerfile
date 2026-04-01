@@ -25,6 +25,7 @@ COPY --from=workspace nanobot/pyproject.toml /app/nanobot/pyproject.toml
 
 # Copy MCP packages that nanobot depends on (from workspace context)
 COPY --from=workspace mcp/mcp-lms/pyproject.toml /app/mcp/mcp-lms/pyproject.toml
+COPY --from=workspace mcp/mcp-obs/pyproject.toml /app/mcp/mcp-obs/pyproject.toml
 
 # Copy webchat channel packages (from workspace context)
 COPY --from=workspace nanobot-websocket-channel/nanobot-channel-protocol/pyproject.toml /app/nanobot-websocket-channel/nanobot-channel-protocol/pyproject.toml
@@ -41,6 +42,9 @@ COPY --from=workspace nanobot/ /app/nanobot/
 # Copy mcp-lms source (from workspace context)
 COPY --from=workspace mcp/mcp-lms/ /app/mcp/mcp-lms/
 
+# Copy mcp-obs source (from workspace context)
+COPY --from=workspace mcp/mcp-obs/ /app/mcp/mcp-obs/
+
 # Copy nanobot-websocket-channel packages (from workspace context)
 COPY --from=workspace nanobot-websocket-channel/nanobot-channel-protocol/ /app/nanobot-websocket-channel/nanobot-channel-protocol/
 COPY --from=workspace nanobot-websocket-channel/nanobot-webchat/ /app/nanobot-websocket-channel/nanobot-webchat/
@@ -48,7 +52,7 @@ COPY --from=workspace nanobot-websocket-channel/mcp-webchat/ /app/nanobot-websoc
 
 # Install nanobot with its workspace dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --package nanobot-agent --package mcp-lms --package nanobot-webchat --package mcp-webchat --package nanobot-channel-protocol
+    uv sync --frozen --package nanobot-agent --package mcp-lms --package mcp-obs --package nanobot-webchat --package mcp-webchat --package nanobot-channel-protocol
 
 # ---
 # Stage 2: use a final image without uv

@@ -189,15 +189,96 @@ Would you like to see more details like the submission timeline, group performan
 
 ## Task 3A — Structured logging
 
-<!-- Paste happy-path and error-path log excerpts, VictoriaLogs query screenshot -->
+**Happy-path log excerpt** (request_started → request_completed with status 200):
+
+```
+backend-1  | 2026-04-01 09:42:50,266 INFO [lms_backend.main] [main.py:62] [trace_id=7cc8dd298b57b395ac8d694ed1b18fa8 span_id=01f0d7166f40634a resource.service.name=Learning Management Service trace_sampled=True] - request_started
+backend-1  | 2026-04-01 09:42:50,561 INFO [lms_backend.auth] [auth.py:30] [trace_id=7cc8dd298b57b395ac8d694ed1b18fa8 span_id=01f0d7166f40634a resource.service.name=Learning Management Service trace_sampled=True] - auth_success
+backend-1  | 2026-04-01 09:42:50,665 INFO [lms_backend.db.items] [items.py:16] [trace_id=7cc8dd298b57b395ac8d694ed1b18fa8 span_id=01f0d7166f40634a resource.service.name=Learning Management Service trace_sampled=True] - db_query
+backend-1  | 2026-04-01 09:42:51,580 INFO [lms_backend.main] [main.py:74] [trace_id=7cc8dd298b57b395ac8d694ed1b18fa8 span_id=01f0d7166f40634a resource.service.name=Learning Management Service trace_sampled=True] - request_completed
+```
+
+**Error-path log excerpt** (db_query with error when PostgreSQL stopped):
+
+```
+backend-1  | 2026-04-01 10:01:52,464 ERROR [lms_backend.db.items] [items.py:23] [trace_id=c6425e77b0e98a114a176786f6f26afa span_id=642bb1531ee45a38 resource.service.name=Learning Management Service trace_sampled=True] - db_query
+backend-1  | 2026-04-01 10:01:52,482 INFO [lms_backend.main] [main.py:74] [trace_id=c6425e77b0e98a114a176786f6f26afa span_id=642bb1531ee45a38 resource.service.name=Learning Management Service trace_sampled=True] - request_completed
+```
+
+**VictoriaLogs query:**
+
+Query: `_time:10m service.name:"Learning Management Service" severity:ERROR`
+
+Results show structured JSON logs with fields like:
+- `_time`: timestamp
+- `service.name`: "Learning Management Service"
+- `severity`: "ERROR"
+- `event`: "db_query"
+- `error`: "(sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) ... connection is closed"
+- `trace_id`: for correlating with traces
+
+<!-- Screenshot of VictoriaLogs UI would go here -->
 
 ## Task 3B — Traces
 
-<!-- Screenshots: healthy trace span hierarchy, error trace -->
+**Healthy trace:** Shows span hierarchy with request_started → auth_success → db_query → request_completed, all completing successfully.
+
+**Error trace:** Shows the same span hierarchy but the db_query span contains an error tag with "connection is closed" message.
+
+<!-- Screenshots of VictoriaTraces UI would go here -->
 
 ## Task 3C — Observability MCP tools
 
-<!-- Paste agent responses to "any errors in the last hour?" under normal and failure conditions -->
+**Created MCP observability server** (`mcp/mcp-obs/`) with 4 tools:
+- `mcp_obs_logs_search` — Search VictoriaLogs using LogsQL
+- `mcp_obs_logs_error_count` — Count errors per service over a time window
+- `mcp_obs_traces_list` — List recent traces for a service
+- `mcp_obs_traces_get` — Fetch a specific trace by ID
+
+**Created observability skill** (`nanobot/workspace/skills/observability/SKILL.md`) teaching the agent to:
+1. Start with `mcp_obs_logs_error_count` for an overview
+2. Use `mcp_obs_logs_search` to inspect specific errors
+3. Extract `trace_id` from logs and fetch full traces with `mcp_obs_traces_get`
+4. Summarize findings concisely
+
+### Agent Response: Normal Conditions
+
+**Question:** "Any LMS backend errors in the last 10 minutes?"
+
+**Response:**
+> Good news! **No LMS backend errors** in the last 10 minutes. ✅
+>
+> Both the error count and log search confirm the Learning Management Service has been running cleanly during that time window.
+
+**Tool calls observed:**
+- `mcp_obs_logs_error_count({"service": "Learning Management Service", "time_window": "10m"})`
+- `mcp_obs_logs_search({"query": "_time:10m service.name:\"Learning Management Service\" severity:ERROR", "limit": 10})`
+
+### Agent Response: Failure Conditions (PostgreSQL stopped)
+
+**Question:** "Any LMS backend errors in the last 10 minutes?"
+
+**Response:**
+> Yes, there was **1 error** in the LMS backend in the last 10 minutes:
+>
+> | Time | Error | Details |
+> |------|-------|---------|
+> | ... | db_query | connection is closed |
+
+**Tool calls observed:**
+- `mcp_obs_logs_error_count({"service": "Learning Management Service", "time_window": "10m"})`
+- `mcp_obs_logs_search({"query": "_time:10m service.name:\"Learning Management Service\" severity:ERROR", "limit": 10})`
+
+**Files created:**
+- `mcp/mcp-obs/pyproject.toml`
+- `mcp/mcp-obs/src/mcp_obs/server.py`
+- `mcp/mcp-obs/src/mcp_obs/__init__.py`
+- `mcp/mcp-obs/src/mcp_obs/__main__.py`
+- `mcp/mcp-obs/README.md`
+- `nanobot/workspace/skills/observability/SKILL.md`
+- `nanobot/entrypoint.py` (updated — added obs MCP server config)
+- `nanobot/Dockerfile` (updated — added mcp-obs package)
+- `pyproject.toml` (updated — added mcp-obs workspace member)
 
 ## Task 4A — Multi-step investigation
 

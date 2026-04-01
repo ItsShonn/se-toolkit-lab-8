@@ -96,6 +96,22 @@ def main():
     config["tools"]["mcpServers"]["webchat"]["env"]["NANOBOT_UI_RELAY_URL"] = f"http://{ui_relay_host}:{ui_relay_port}"
     config["tools"]["mcpServers"]["webchat"]["env"]["NANOBOT_UI_RELAY_TOKEN"] = nanobot_access_key or ""
 
+    # Inject observability MCP server settings from env vars
+    victorialogs_url = os.environ.get("NANOBOT_VICTORIALOGS_URL")
+    victoriatraces_url = os.environ.get("NANOBOT_VICTORIATRACES_URL")
+
+    if "obs" not in config["tools"]["mcpServers"]:
+        config["tools"]["mcpServers"]["obs"] = {
+            "command": "python",
+            "args": ["-m", "mcp_obs"],
+            "env": {}
+        }
+
+    if victorialogs_url:
+        config["tools"]["mcpServers"]["obs"]["env"]["NANOBOT_VICTORIALOGS_URL"] = victorialogs_url
+    if victoriatraces_url:
+        config["tools"]["mcpServers"]["obs"]["env"]["NANOBOT_VICTORIATRACES_URL"] = victoriatraces_url
+
     # Write resolved config
     with open(resolved_path, "w") as f:
         json.dump(config, f, indent=2)

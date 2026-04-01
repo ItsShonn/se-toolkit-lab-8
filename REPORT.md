@@ -282,15 +282,157 @@ Results show structured JSON logs with fields like:
 
 ## Task 4A — Multi-step investigation
 
-<!-- Paste the agent's response to "What went wrong?" showing chained log + trace investigation -->
+**Agent response to "What went wrong?"** (with PostgreSQL stopped):
+
+```
+## Summary: What Went Wrong ❌
+
+The **Learning Management Service (LMS) backend** is experiencing **database connectivity issues**.
+
+**Log Evidence:**
+- Found 5 errors in the last hour from the Learning Management Service
+- Error event: db_query
+- Error message: "(sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) ... connection is closed"
+- Operation: SELECT from item table
+
+**Trace Evidence:**
+- Trace ID: c6425e77b0e98a114a176786f6f26afa
+- Span hierarchy: request_started → auth_success → db_query (FAILED) → request_completed
+- The db_query span failed with SQLAlchemy error
+
+**Root Cause:**
+PostgreSQL database is unavailable. The backend cannot establish database connections, causing all database queries to fail.
+
+**Affected Service:**
+Learning Management Service (LMS backend)
+```
+
+**Tool calls observed:**
+- `mcp_obs_logs_error_count({"time_window": "1h"})`
+- `mcp_obs_logs_search({"query": "_time:1h service.name:\"Learning Management Service\" severity:ERROR", "limit": 10})`
+- `mcp_obs_traces_get(trace_id="c6425e77b0e98a114a176786f6f26afa")`
 
 ## Task 4B — Proactive health check
 
-<!-- Screenshot or transcript of the proactive health report that appears in the Flutter chat -->
+**Scheduled health check job:**
+
+Agent created a cron job that runs every 2 minutes:
+- Checks for LMS backend errors in the last 2 minutes using `mcp_obs_logs_error_count`
+- Searches error logs using `mcp_obs_logs_search`
+- Posts a summary to the chat
+
+**Proactive health report** (while PostgreSQL was stopped):
+
+```
+## 🔴 Health Report — Issues Detected
+
+**Time window:** Last 2 minutes
+**Errors found:** 3 errors in Learning Management Service
+
+**Recent errors:**
+1. db_query failed: connection is closed
+2. items_list_failed: Database error
+3. request_completed with 500 status
+
+**Status:** Backend is unhealthy due to database connectivity issues.
+```
+
+**Nanobot logs showing cron execution:**
+```
+nanobot-1 | Tool call: cron({"action": "list"})
+nanobot-1 | Tool call: mcp_obs_logs_error_count({"time_window": "2m", "service": "Learning Management Service"})
+nanobot-1 | Tool call: mcp_obs_logs_search({"query": "_time:2m severity:ERROR", "limit": 10})
+```
 
 ## Task 4C — Bug fix and recovery
 
-<!-- 1. Root cause identified
-     2. Code fix (diff or description)
-     3. Post-fix response to "What went wrong?" showing the real underlying failure
-     4. Healthy follow-up report or transcript after recovery -->
+### 1. Root Cause — Planted Bug
+
+**Location:** `backend/src/lms_backend/routers/items.py`, lines 20-30
+
+**Bug:** The `get_items` endpoint caught all exceptions and incorrectly returned **HTTP 404 "Items not found"** instead of propagating the real database error.
+
+```python
+# BEFORE (buggy code):
+@router.get("/", response_model=list[ItemRecord])
+async def get_items(session: AsyncSession = Depends(get_session)):
+    try:
+        return await read_items(session)
+    except Exception as exc:
+        logger.warning(
+            "items_list_failed_as_not_found",
+            extra={"event": "items_list_failed_as_not_found"},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Items not found",
+        ) from exc
+```
+
+**Problem:** When PostgreSQL was down, the real error (SQLAlchemy connection failure) was hidden and replaced with a misleading 404 error.
+
+### 2. Fix Applied
+
+**Changed:**
+- Log level from `warning` to `error`
+- Event name from `items_list_failed_as_not_found` to `items_list_failed`
+- Added error details to log (error message and error type)
+- HTTP status code from `404_NOT_FOUND` to `500_INTERNAL_SERVER_ERROR`
+- Error detail from generic "Items not found" to actual database error message
+
+```python
+# AFTER (fixed code):
+@router.get("/", response_model=list[ItemRecord])
+async def get_items(session: AsyncSession = Depends(get_session)):
+    try:
+        return await read_items(session)
+    except Exception as exc:
+        logger.error(
+            "items_list_failed",
+            extra={
+                "event": "items_list_failed",
+                "error": str(exc),
+                "error_type": type(exc).__name__,
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(exc)}",
+        ) from exc
+```
+
+### 3. Post-Fix Response to "What went wrong?" (after redeploy)
+
+**Question:** "What labs are available?" (with PostgreSQL stopped)
+
+**Response:**
+```
+The LMS backend is currently **unhealthy** and experiencing database connectivity issues.
+
+The error logs show:
+- **Error**: `[Errno -2] Name or service not known`
+- **Issue**: The LMS service cannot resolve the database hostname (DNS resolution failure)
+- **Impact**: All lab data queries are failing with HTTP 500 errors
+
+This appears to be an infrastructure issue with the database connection. The LMS backend cannot connect to its PostgreSQL database.
+```
+
+**Key improvement:** The agent now reports the **real underlying failure** (database connectivity, DNS resolution) instead of the misleading "404 Items not found".
+
+### 4. Healthy Follow-Up Report (after PostgreSQL restarted)
+
+**Question:** "How is the backend doing?" (after PostgreSQL restarted)
+
+**Response:**
+```
+The LMS backend is **healthy** ✅
+
+- Status: OK
+- Items in system: 56
+- No errors detected in the last 2 minutes
+
+All database connections are working normally.
+```
+
+**Files modified:**
+- `backend/src/lms_backend/routers/items.py` — Fixed exception handler to return 500 with real error instead of 404

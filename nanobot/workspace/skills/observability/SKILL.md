@@ -52,6 +52,37 @@ When the user asks about errors or system health:
    - Report: number of errors, affected services, root cause if found
    - Example: "Found 3 errors in the LMS backend in the last 10 minutes. All failures occurred in the database layer: 'connection is closed'. Trace c6425e77 shows the request failed at the db_query span."
 
+## One-Shot Investigation Flow ("What went wrong?")
+
+When the user asks **"What went wrong?"** or **"Check system health"**, perform a complete investigation in one pass:
+
+1. **`mcp_obs_logs_error_count(time_window="10m")`** — Quick overview of recent errors
+2. **`mcp_obs_logs_search(query="_time:10m severity:ERROR", limit=10)`** — Get detailed error logs
+3. **Extract `trace_id`** from the most recent error log entry
+4. **`mcp_obs_traces_get(trace_id="...")`** — Fetch the full trace to see the failure point
+5. **Synthesize a single coherent response** that includes:
+   - **Log evidence**: What the error logs show (error message, service, timestamp)
+   - **Trace evidence**: Where in the request flow the failure occurred (which span, which operation)
+   - **Root cause**: Your diagnosis of what went wrong
+   - **Affected service**: Which service is failing
+
+**Example response structure:**
+
+> **Investigation Summary:**
+>
+> **Log Evidence:** Found 2 errors in the last 10 minutes. The most recent error at 10:15:32 shows:
+> - Service: Learning Management Service
+> - Event: db_query
+> - Error: "connection is closed" (PostgreSQL connection failure)
+>
+> **Trace Evidence:** Trace `c6425e77b0e98a114a176786f6f26afa` shows the request flow:
+> - request_started → auth_success → **db_query (FAILED)** → request_completed (404)
+> - The db_query span failed with SQLAlchemy error: connection closed
+>
+> **Root Cause:** PostgreSQL database is unavailable. The backend cannot establish database connections, causing all queries to fail.
+>
+> **Affected Service:** Learning Management Service (LMS backend)
+
 ## Examples
 
 **User:** "Any errors in the last hour?"
@@ -60,11 +91,19 @@ When the user asks about errors or system health:
 
 **User:** "What went wrong with the LMS backend?"
 
-**You:** 
+**You:**
 1. Call `mcp_obs_logs_error_count(time_window="10m", service="Learning Management Service")`
 2. Call `mcp_obs_logs_search(query="_time:10m service.name:\"Learning Management Service\" severity:ERROR")`
 3. If you find a trace_id, call `mcp_obs_traces_get(trace_id="...")`
-4. Summarize the failure point
+4. Summarize the failure point with both log and trace evidence
+
+**User:** "What went wrong?"
+
+**You:** Perform the one-shot investigation flow:
+1. `mcp_obs_logs_error_count(time_window="10m")`
+2. `mcp_obs_logs_search(query="_time:10m severity:ERROR", limit=10)`
+3. Extract trace_id from logs, call `mcp_obs_traces_get(trace_id="...")`
+4. Provide a complete summary with log evidence, trace evidence, root cause, and affected service
 
 **User:** "Show me the trace for request abc123"
 
@@ -77,3 +116,4 @@ When the user asks about errors or system health:
 - Look for `severity:ERROR` or `severity:WARN` in log queries
 - Trace IDs are 32-character hex strings (e.g., `c6425e77b0e98a114a176786f6f26afa`)
 - When you find an error in logs, extract the `trace_id` and fetch the full trace for context
+- For "What went wrong?" always provide BOTH log evidence AND trace evidence in your answer

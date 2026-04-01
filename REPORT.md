@@ -150,6 +150,41 @@ nanobot-1  | Agent loop started
 - `.gitmodules` — added nanobot-websocket-channel submodule
 
 <!-- Screenshot of a conversation with the agent in the Flutter web app -->
+ME: Hello! Who are you?
+BOT: ello! I'm **nanobot** 🐈, your personal AI assistant.
+
+I'm here to help you with various tasks like:
+- Answering questions and providing information
+- Managing files and running commands
+- Scheduling reminders and recurring tasks
+- Querying course data from the LMS (labs, scores, completion rates, etc.)
+- Searching the web
+- And much more!
+
+I'm friendly, concise, and always aim for accuracy. How can I help you today?
+ME: Tell me about scores on lab 3
+BOT: Here are the scores for **Lab 3**:
+
+## Overall Completion
+- **Completion Rate**: 89.1%
+- **Passed**: 156 out of 175 learners
+
+## Task Performance
+
+| Task | Avg Score | Attempts |
+|------|-----------|----------|
+| Task 1: Explore the API | 63.5 | 382 |
+| Task 2: Enable and debug the interactions endpoint | 66.4 | 299 |
+| Task 3: Implement the learners endpoint | 50.0 | 4 |
+| Task 4: Deploy to a hardened VM | 43.9 | 110 |
+| Optional 2: Set up CI with GitHub Actions | 44.0 | 5 |
+
+**Key observations:**
+- Task 2 has the highest average score (66.4)
+- Task 4 (deployment) has the lowest score among required tasks (43.9)
+- Task 3 and Optional 2 have very few attempts, suggesting they may be newer or more challenging
+
+Would you like to see more details like the submission timeline, group performance, or top learners for this lab?
 <!-- Add screenshot after fixing Qwen credentials -->
 
 ## Task 3A — Structured logging

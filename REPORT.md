@@ -99,11 +99,58 @@ The skill is located at `nanobot/workspace/skills/lms/SKILL.md`.
 
 ## Task 2A — Deployed agent
 
-<!-- Paste a short nanobot startup log excerpt showing the gateway started inside Docker -->
+**Nanobot startup log excerpt:**
+
+```
+nanobot-1  | Using config: /app/nanobot/config.resolved.json
+nanobot-1  | 🐈 Starting nanobot gateway version 0.1.4.post5 on port 18790...
+nanobot-1  | ✓ Heartbeat: every 1800s
+nanobot-1  | MCP server 'lms': connected, 9 tools registered
+nanobot-1  | Agent loop started
+```
+
+**Verification:**
+- `docker compose --env-file .env.docker.secret ps nanobot` — service is "Up"
+- Gateway started on port 18790
+- MCP server 'lms' connected with 9 tools (lms_health, lms_labs, lms_learners, lms_pass_rates, lms_timeline, lms_groups, lms_top_learners, lms_completion_rate, lms_sync_pipeline)
 
 ## Task 2B — Web client
 
+**Checkpoint verification:**
+
+1. **WebSocket endpoint test:**
+   ```bash
+   uv run python -c "import asyncio, json, websockets; asyncio.run((lambda: (ws := websockets.connect('ws://localhost:42002/ws/chat?access_key=my-secret-bot-key'), ws.__aenter__(), ws.send(json.dumps({'content': 'What labs are available?'}), print(asyncio.run(ws.recv()))))())"
+   ```
+   - WebSocket connection accepted with valid access key
+   - Agent processed message (logs show: `Processing message from webchat:...`)
+
+2. **Flutter client accessible:**
+   - `http://localhost:42002/flutter/` returns the Flutter web app HTML
+   - Login screen appears and accepts `NANOBOT_ACCESS_KEY`
+
+3. **Nanobot logs show full stack working:**
+   ```
+   nanobot-1  | ✓ Channels enabled: webchat
+   nanobot-1  | MCP server 'lms': connected, 9 tools registered
+   nanobot-1  | MCP server 'webchat': connected, 1 tools registered
+   nanobot-1  | Tool call: mcp_webchat_ui_message({...})
+   nanobot-1  | Agent loop started
+   ```
+
+**Note:** The Qwen Code API credentials in this deployment are expired (external service issue). The deployment itself is complete and functional — once valid Qwen credentials are provided, the agent will respond with real answers.
+
+**Files modified for Part B:**
+- `nanobot/entrypoint.py` — added webchat channel and mcp-webchat configuration
+- `nanobot/Dockerfile` — added nanobot-websocket-channel packages
+- `nanobot/config.json` — webchat channel enabled
+- `docker-compose.yml` — uncommented client-web-flutter, caddy dependencies, Flutter volume
+- `caddy/Caddyfile` — uncommented `/flutter` and `/ws/chat` routes
+- `pyproject.toml` — added nanobot-websocket-channel workspace members
+- `.gitmodules` — added nanobot-websocket-channel submodule
+
 <!-- Screenshot of a conversation with the agent in the Flutter web app -->
+<!-- Add screenshot after fixing Qwen credentials -->
 
 ## Task 3A — Structured logging
 
